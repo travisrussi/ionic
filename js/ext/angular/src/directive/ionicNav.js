@@ -1,6 +1,15 @@
 (function() {
 'use strict';
 
+/**
+ * @description
+ * The NavController is a navigation stack View Controller modelled off of 
+ * UINavigationController from Cocoa Touch. With the Nav Controller, you can
+ * "push" new "pages" on to the navigation stack, and then pop them off to go
+ * back. The NavController controls a navigation bar with a back button and title
+ * which updates as the pages switch.
+ *
+ */
 angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.gesture', 'ionic.service.platform', 'ngAnimate'])
 
 .controller('NavCtrl', ['$scope', '$element', '$animate', '$compile', 'TemplateLoader', 'Platform', function($scope, $element, $animate, $compile, TemplateLoader, Platform) {
@@ -21,8 +30,9 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
 
       // Compile the template with the new scrope, and append it to the navigation's content area
       var el = $compile(templateString)(childScope, function(cloned, scope) {
-        var content = angular.element($element[0].querySelector('.content, .scroll'));
-        $animate.enter(cloned, angular.element(content));
+        //var content = angular.element($element[0].querySelector('.content, .scroll'));
+        cloned.addClass(childScope.pushAnimation);
+        $animate.enter(cloned, angular.element($element));
       });
     });
   }, 300, {
@@ -32,7 +42,7 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
   // Pop function, throttled
   this.popController = ionic.throttle(function() {
     _this.pop();
-    $scope.$broadcast('navs.pop');
+    $scope.$broadcast('navigation.pop');
   }, 300, {
     trailing: false
   });
@@ -80,7 +90,12 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
    */
   $scope.pushController = function(scope, element) {
     _this.push(scope);
-    $scope.$broadcast('navs.push', scope);
+    $scope.$broadcast('navigation.push', scope);
+  };
+
+  this.pushController = function(scope) {
+    _this.push(scope);
+    $scope.$broadcast('navigation.push', scope);
   };
 
   $scope.navController = this;
@@ -91,7 +106,10 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
   });
 }])
 
-.directive('navs', function() {
+/**
+ * The main directive for the controller.
+ */
+.directive('navigation', function() {
   return {
     restrict: 'E',
     replace: true,
@@ -99,13 +117,24 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
     controller: 'NavCtrl',
     //templateUrl: 'ext/angular/tmpl/ionicTabBar.tmpl.html',
     template: '<div class="view" ng-transclude></div>',
+    scope: {
+      first: '@'
+    },
+    link: function($scope, $element, $attr, navCtrl) {
+      if($scope.first) {
+        navCtrl.pushFromTemplate($scope.first);
+      }
+    }
   };
 })
 
+/**
+ * Our Nav Bar directive which updates as the controller state changes.
+ */
 .directive('navBar', function() {
   return {
     restrict: 'E',
-    require: '^navs',
+    require: '^navigation',
     replace: true,
     scope: {
       type: '@',
@@ -135,12 +164,12 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
 
       $scope.headerBarView = hb;
 
-      $scope.$parent.$on('navs.push', function() {
+      $scope.$parent.$on('navigation.push', function() {
         backButton = angular.element($element[0].querySelector('.button'));
         backButton.addClass($scope.backButtonType);
         hb.align();
       });
-      $scope.$parent.$on('navs.pop', function() {
+      $scope.$parent.$on('navigation.pop', function() {
         hb.align();
       });
 
@@ -151,7 +180,7 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
   };
 })
 
-.directive('navContent', ['Gesture', '$animate', '$compile', function(Gesture, $animate, $compile) {
+.directive('navPage', ['Gesture', '$animate', '$compile', function(Gesture, $animate, $compile) {
 
   // We need to animate the new controller into view.
   var animatePushedController = function(childScope, clone, $element, isForward) {
@@ -193,9 +222,14 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
   };
 
   return {
-    restrict: 'ECA',
-    require: '^navs',
-    transclude: 'element',
+    restrict: 'E',
+    require: '^navigation',
+    transclude: true,
+    replace: true,
+    template: '<div class="pane" ng-transclude></div>',
+    scope: {
+      title: '='
+    },
     compile: function(element, attr, transclude) {
       return function($scope, $element, $attr, navCtrl) {
         var lastParent, lastIndex, childScope, childElement;
@@ -204,6 +238,11 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
         // based on the visibility sequence (to support reverse transitions)
         var lastDirection = null;
 
+        $scope.$watch('title', function(value) {
+          //$scope.parent.headerBarView.align();
+        });
+
+        /*
         $scope.title = $attr.title;
         $scope.pushAnimation = $attr.pushAnimation || 'slide-in-left';
         $scope.popAnimation = $attr.popAnimation || 'slide-in-right';
@@ -211,6 +250,7 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
         $scope.slideTitleOutAnimation = $attr.slideTitleOutAnimation || 'bar-title-out';
         $scope.slideButtonInAnimation = $attr.slideButtonInAnimation || 'bar-button-in';
         $scope.slideButtonOutAnimation = $attr.slideButtonOutAnimation || 'bar-button-out';
+        */
 
         if($attr.navBar === "false") {
           navCtrl.hideNavBar();
@@ -243,7 +283,7 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
         };
 
         // Push this controller onto the stack
-        $scope.pushController($scope, $element);
+        navCtrl.pushController($scope, $element);
 
         $scope.$watch('isVisible', function(value) {
 
@@ -285,6 +325,49 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
       }
     }
   };
-}]);
+}])
+
+
+.directive('navPush', function() {
+  return {
+    restrict: 'A',
+    link: function($scope, $element, $attr, navCtrl) {
+      var templateUrl = $attr.navPush;
+
+      var pushTemplate = function(e) {
+        $scope.$apply(function() {
+          $scope.navController.pushFromTemplate(templateUrl);
+        });
+        return false;
+      };
+
+      $element.bind('tap', pushTemplate);
+
+      $scope.$on('$destroy', function() {
+        $element.unbind('tap', pushTemplate);
+      });
+    }
+  }
+})
+
+.directive('navPop', function() {
+  return {
+    restrict: 'A',
+    link: function($scope, $element, $attr, navCtrl) {
+      var popTemplate = function(e) {
+        $scope.$apply(function() {
+          $scope.navController.pop();
+        });
+        return false;
+      };
+
+      $element.bind('tap', popTemplate);
+
+      $scope.$on('$destroy', function() {
+        $element.unbind('tap', popTemplate);
+      });
+    }
+  }
+})
 
 })();
