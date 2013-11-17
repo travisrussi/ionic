@@ -41,6 +41,7 @@
 }
 
 .slide-in-left {
+  -webkit-transform: translate3d(0%,0,0);
   &.ng-enter, > .ng-enter {
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
@@ -55,11 +56,9 @@
   }
 }
 
-.slide-in-left {
-}
-
 
 .slide-in-left-add {
+  -webkit-transform: translate3d(100%,0,0);
   -webkit-animation-duration: 250ms;
   -webkit-animation-fill-mode: both;
   -webkit-animation-timing-function: ease-in-out;
@@ -69,6 +68,7 @@
 }
 
 .slide-out-left {
+  -webkit-transform: translate3d(-100%,0,0);
   &.ng-enter, > .ng-enter {
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
@@ -87,6 +87,7 @@
 }
 
 .slide-out-left-add {
+  -webkit-transform: translate3d(0,0,0);
   -webkit-animation-duration: 250ms;
   -webkit-animation-fill-mode: both;
   -webkit-animation-timing-function: ease-in-out;
@@ -96,6 +97,7 @@
 }
 
 .slide-in-right {
+  -webkit-transform: translate3d(0%,0,0);
   &.ng-enter, > .ng-enter {
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
@@ -110,10 +112,8 @@
   }
 }
 
-.slide-in-right {
-}
-
 .slide-in-right-add {
+  -webkit-transform: translate3d(-100%,0,0);
   -webkit-animation-duration: 250ms;
   -webkit-animation-fill-mode: both;
   -webkit-animation-timing-function: ease-in-out;
@@ -123,6 +123,7 @@
 }
 
 .slide-out-right {
+  -webkit-transform: translate3d(100%,0,0);
   &.ng-enter, > .ng-enter {
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
@@ -140,6 +141,7 @@
 .slide-out-right {
 }
 .slide-out-right-add {
+  -webkit-transform: translate3d(0,0,0);
   -webkit-animation-duration: 250ms;
   -webkit-animation-fill-mode: both;
   -webkit-animation-timing-function: ease-in-out;
