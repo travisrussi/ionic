@@ -23888,10 +23888,22 @@ angular.module('ionic.ui.loading', [])
  */
 angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.gesture', 'ionic.service.platform', 'ngAnimate'])
 
-.controller('NavCtrl', ['$scope', '$element', '$animate', '$compile', 'TemplateLoader', 'Platform', function($scope, $element, $animate, $compile, TemplateLoader, Platform) {
+.controller('NavCtrl', ['$scope', '$element', '$animate', '$compile', '$timeout', 'TemplateLoader', 'Platform', function($scope, $element, $animate, $compile, $timeout, TemplateLoader, Platform) {
   var _this = this;
 
   angular.extend(this, ionic.controllers.NavController.prototype);
+
+  var pushInAnimation = $scope.pushInAnimation || 'slide-in-left';
+  var pushOutAnimation = $scope.pushOutAnimation || 'slide-out-left';
+  var popInAnimation = $scope.popInAnimation || 'slide-in-right';
+  var popOutAnimation = $scope.popOutAnimation || 'slide-out-right';
+
+  var cleanElementAnimations = function(el) {
+    el.removeClass(pushInAnimation);
+    el.removeClass(pushOutAnimation);
+    el.removeClass(popInAnimation);
+    el.removeClass(popOutAnimation);
+  }
 
   /**
    * Push a template onto the navigation stack.
@@ -23899,16 +23911,37 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
    */
   this.pushFromTemplate = ionic.throttle(function(templateUrl) {
     var childScope = $scope.$new();
-    childScope.isVisible = true;
+    var last = _this.getTopController();
 
     // Load the given template
     TemplateLoader.load(templateUrl).then(function(templateString) {
 
-      // Compile the template with the new scrope, and append it to the navigation's content area
+      // Compile the template with the new scrope, and append
+      // it to the navigation's content area
       var el = $compile(templateString)(childScope, function(cloned, scope) {
-        //var content = angular.element($element[0].querySelector('.content, .scroll'));
-        cloned.addClass(childScope.pushAnimation);
-        $animate.enter(cloned, angular.element($element));
+
+        // If there was a last controller, remove it and mark the new
+        // one to animate
+        if(last) {
+          // Push animate
+          cleanElementAnimations(last.element);
+          $animate.addClass(last.element, pushOutAnimation, function() {
+            last.element[0].style.display = 'none';
+            last.element.removeClass(pushOutAnimation);
+          });
+
+        }
+
+
+        if(last) {
+          // We will need to animate in the new page since we have an old page
+          cloned.addClass(pushInAnimation);
+          $animate.addClass(cloned, pushInAnimation);
+        }
+
+        $animate.enter(cloned, $element, null, function() {
+        });
+
       });
     });
   }, 300, {
@@ -23917,8 +23950,26 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
 
   // Pop function, throttled
   this.popController = ionic.throttle(function() {
-    _this.pop();
+    var last = _this.pop();
     $scope.$broadcast('navigation.pop');
+
+    var next = _this.getTopController();
+
+    if(last) {
+
+      cleanElementAnimations(last.element);
+      $animate.addClass(last.element, popOutAnimation, function() {
+        last.scope.$destroy();
+        last.element.remove();
+      });
+    }
+
+    // Animate the next one in
+    if(next) {
+      cleanElementAnimations(next.element);
+      $animate.addClass(next.element, popInAnimation)
+      next.element[0].style.display = 'block';
+    }
   }, 300, {
     trailing: false
   });
@@ -23965,12 +24016,18 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
    * nav-content directive when it is linked to a scope on the page.
    */
   $scope.pushController = function(scope, element) {
-    _this.push(scope);
+    _this.push({
+      scope: scope,
+      element: element
+    });
     $scope.$broadcast('navigation.push', scope);
   };
 
-  this.pushController = function(scope) {
-    _this.push(scope);
+  this.pushController = function(scope, element) {
+    _this.push({
+      scope: scope,
+      element: element
+    });
     $scope.$broadcast('navigation.push', scope);
   };
 
@@ -23994,9 +24051,14 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
     //templateUrl: 'ext/angular/tmpl/ionicTabBar.tmpl.html',
     template: '<div class="view" ng-transclude></div>',
     scope: {
-      first: '@'
+      first: '@',
+      pushAnimation: '@',
+      popAnimation: '@'
     },
     link: function($scope, $element, $attr, navCtrl) {
+      $scope.pushAnimation = $scope.pushAnimation || 'slide-in-left';
+      $scope.popAnimation = $scope.popAnimation || 'slide-out-left';
+
       if($scope.first) {
         navCtrl.pushFromTemplate($scope.first);
       }
@@ -24058,155 +24120,41 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
 
 .directive('navPage', ['Gesture', '$animate', '$compile', function(Gesture, $animate, $compile) {
 
-  // We need to animate the new controller into view.
-  var animatePushedController = function(childScope, clone, $element, isForward) {
-    var parent = angular.element($element.parent().parent().parent());
-    
-    var title = angular.element(parent[0].querySelector('.title'));
-
-    // Clone the old title and insert it so we can animate it back into place for the new controller
-    var newTitle = angular.element(title.clone());
-    $compile(newTitle)(childScope);
-    title.after(newTitle);
-    // Grab the button so we can slide it in
-    var button = angular.element(parent[0].querySelector('.button'));
-
-    if(isForward) {
-
-      // Slide the button in
-      $animate.addClass(button, childScope.slideButtonInAnimation, function() {
-        $animate.removeClass(button, childScope.slideButtonInAnimation, function() {});
-      })
-
-      // Slide the new title in
-      $animate.addClass(newTitle, childScope.slideTitleInAnimation, function() {
-        $animate.removeClass(newTitle, childScope.slideTitleInAnimation, function() {
-          newTitle.scope().$destroy();
-          newTitle.remove();
-        });
-      });
-
-      // Grab the old title and slide it out
-      var title = $element.parent().parent().parent()[0].querySelector('.title');
-      $animate.addClass(angular.element(title), childScope.slideTitleOutAnimation, function() {
-        $animate.removeClass(angular.element(title), childScope.slideTitleOutAnimation, function() {
-        });
-      });
-    } else {
-      clone.addClass(childScope.slideBackInAnimation);
-    }
-  };
-
   return {
-    restrict: 'E',
+    restrict: 'AC',
     require: '^navigation',
-    transclude: true,
-    replace: true,
-    template: '<div class="pane" ng-transclude></div>',
-    scope: {
-      title: '='
-    },
-    compile: function(element, attr, transclude) {
-      return function($scope, $element, $attr, navCtrl) {
-        var lastParent, lastIndex, childScope, childElement;
+    link: function($scope, $element, $attr, navCtrl) {
+      var lastParent, lastIndex, childScope, childElement;
 
-        // Store that we should go forwards on the animation. This toggles
-        // based on the visibility sequence (to support reverse transitions)
-        var lastDirection = null;
+      // Store that we should go forwards on the animation. This toggles
+      // based on the visibility sequence (to support reverse transitions)
+      var lastDirection = null;
 
-        $scope.$watch('title', function(value) {
-          //$scope.parent.headerBarView.align();
-        });
+      $scope.title = $attr.title;
 
-        /*
-        $scope.title = $attr.title;
-        $scope.pushAnimation = $attr.pushAnimation || 'slide-in-left';
-        $scope.popAnimation = $attr.popAnimation || 'slide-in-right';
-        $scope.slideTitleInAnimation = $attr.slideTitleInAnimation || 'bar-title-in';
-        $scope.slideTitleOutAnimation = $attr.slideTitleOutAnimation || 'bar-title-out';
-        $scope.slideButtonInAnimation = $attr.slideButtonInAnimation || 'bar-button-in';
-        $scope.slideButtonOutAnimation = $attr.slideButtonOutAnimation || 'bar-button-out';
-        */
-
-        if($attr.navBar === "false") {
-          navCtrl.hideNavBar();
-        } else {
-          navCtrl.showNavBar();
-        }
-
-        $scope.visibilityChanged = function(direction) {
-          lastDirection = direction;
-
-          if($scope.isVisible) {
-            $scope.$broadcast('navContent.shown');
-          } else {
-            $scope.$broadcast('navContent.hidden');
-          }
-
-          if(!childElement) {
-            return;
-          }
-
-          var clone = childElement;
-
-          if(direction == 'push') {
-            clone.addClass(childScope.pushAnimation);
-            clone.removeClass(childScope.popAnimation);
-          } else if(direction == 'pop') {
-            clone.addClass(childScope.popAnimation);
-            clone.removeClass(childScope.pushAnimation);
-          }
-        };
-
-        // Push this controller onto the stack
-        navCtrl.pushController($scope, $element);
-
-        $scope.$watch('isVisible', function(value) {
-
-          if(value) {
-            childScope = $scope.$new();
-
-            transclude(childScope, function(clone) {
-              childElement = clone;
-
-              if(lastDirection == 'push') {
-                clone.addClass(childScope.pushAnimation);
-              } else if(lastDirection == 'pop') {
-                clone.addClass(childScope.popAnimation);
-              }
-
-              $animate.enter(clone, $element.parent(), $element, function() {
-                clone.removeClass(childScope.pushAnimation);
-                clone.removeClass(childScope.popAnimation);
-              });
-            });
-          } else {
-            // Taken from ngIf
-            if(childElement) {
-              // Check if this is visible, and if so, create it and show it
-              $animate.leave(childElement, function() {
-                if(childScope) {
-                  childElement.removeClass(childScope.pushAnimation);
-                  childElement.removeClass(childScope.popAnimation);
-                }
-              });
-              childElement = undefined;
-            }
-            if(childScope) {
-              childScope.$destroy();
-              childScope = undefined;
-            }
-          }
-        });
+      if($attr.navBar === "false") {
+        navCtrl.hideNavBar();
+      } else {
+        navCtrl.showNavBar();
       }
-    }
-  };
-}])
 
+      $scope.$on('$destroy', function() {
+        console.log('SCOPE DESTROYED');
+        if(childElement) {
+          childElement.remove();
+        }
+      });
+    
+      // Push this controller onto the stack
+      navCtrl.pushController($scope, $element);
+    }
+  }
+}])
 
 .directive('navPush', function() {
   return {
     restrict: 'A',
+    require: '^navigation',
     link: function($scope, $element, $attr, navCtrl) {
       var templateUrl = $attr.navPush;
 
@@ -24229,6 +24177,7 @@ angular.module('ionic.ui.nav', ['ionic.service.templateLoad', 'ionic.service.ges
 .directive('navPop', function() {
   return {
     restrict: 'A',
+    require: '^navigation',
     link: function($scope, $element, $attr, navCtrl) {
       var popTemplate = function(e) {
         $scope.$apply(function() {

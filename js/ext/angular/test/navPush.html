@@ -36,42 +36,22 @@
     </navigation>
 
     <script id="page.html" type="text/ng-template">
-      <nav-page title="title">
-        <div title="title" ng-controller="CatsCtrl">
+      <div title="title" class="nav-page">
+        <div ng-controller="CatsCtrl">
           <content has-header="true">
-            <h1>{{navController.controllers.length}}</h1>
-            <a href="#" class="button button-royal" nav-push="page.html">Next</a>
-            <button class="button button-assertive" nav-pop>Prev</button>
-            <list><list-item ng-repeat="item in items" on-select="goNext()">Test</list-item></list>
+            {{secretNumber}}
+            <list><item ng-repeat="item in items" nav-push="page.html">{{item.t}}</item></list>
+            <button ng-click="doit()" class="button button-assertive">Do it</button>
           </content>
         </div>
-      </nav-page>
+      </div>
     </script>
 
     <script>
-      var pageNumber = 0;
-
-      var pushIt = function($scope, $compile, $element, cb) {
-        var childScope = $scope.$new();
-        childScope.isVisible = true;
-
-        var items = [];
-        for(var i = 0; i < 100; i++) {
-          items.push({});
-        }
-        childScope.items = items;
-
-        pageNumber++;
-
-      }
-
       angular.module('navTest', ['ionic', 'ngAnimate'])
 
-      .controller('AppCtrl', function($scope, $compile, $element) {
-        $scope.navController.pushFromTemplate('page.html');
-      })
-
       .controller('CatsCtrl', function($scope, $compile, $element) {
+          console.log('CONTROLLE READEONE');
         $scope.$on('navContent.shown', function() {
           console.log('SHOWN');
         });
@@ -79,14 +59,20 @@
           console.log('HIDDEN');
         });
 
-        $scope.thisThing = function() {
-          console.log("THIS THING");
-        };
+        $scope.secretNumber = Math.floor(Math.random() * 100);
 
-        var items = [];
-        for(var i = 0; i < 100; i++) {
-          items.push({});
-        }
+        $scope.doit = function() { alert('waht'); };
+
+        var items = [
+          {t: 'This one'},
+          {t: 'Hmm, maybe this one'},
+          {t: 'Not that one, this one'},
+          {t: 'Um, this one?'},
+          {t: 'No, this one'}
+        ];
+        items = items.sort(function() {
+          return .5 - Math.random();
+        });
         $scope.items = items;
         $scope.goNext = function() {
           $scope.navController.pushFromTemplate('page.html');

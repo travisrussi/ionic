@@ -55,6 +55,19 @@
   }
 }
 
+.slide-in-left {
+}
+
+
+.slide-in-left-add {
+  -webkit-animation-duration: 250ms;
+  -webkit-animation-fill-mode: both;
+  -webkit-animation-timing-function: ease-in-out;
+}
+.slide-in-left-add-active {
+  -webkit-animation-name: slideInLeft;
+}
+
 .slide-out-left {
   &.ng-enter, > .ng-enter {
     -webkit-animation-duration: 250ms;
@@ -66,8 +79,20 @@
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
     -webkit-animation-timing-function: ease-in-out;
-    -webkit-animation-name: slideInLeft;
+    -webkit-animation-name: slideOutLeft;
   }
+}
+
+.slide-out-left {
+}
+
+.slide-out-left-add {
+  -webkit-animation-duration: 250ms;
+  -webkit-animation-fill-mode: both;
+  -webkit-animation-timing-function: ease-in-out;
+}
+.slide-out-left-add-active {
+  -webkit-animation-name: slideOutLeft;
 }
 
 .slide-in-right {
@@ -81,8 +106,20 @@
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
     -webkit-animation-timing-function: ease-in-out;
-    -webkit-animation-name: slideOutRight;
+    -webkit-animation-name: slideInRight;
   }
+}
+
+.slide-in-right {
+}
+
+.slide-in-right-add {
+  -webkit-animation-duration: 250ms;
+  -webkit-animation-fill-mode: both;
+  -webkit-animation-timing-function: ease-in-out;
+}
+.slide-in-right-add-active {
+  -webkit-animation-name: slideInRight;
 }
 
 .slide-out-right {
@@ -96,8 +133,19 @@
     -webkit-animation-duration: 250ms;
     -webkit-animation-fill-mode: both;
     -webkit-animation-timing-function: ease-in-out;
-    -webkit-animation-name: slideInRight;
+    -webkit-animation-name: slideOutRight;
   }
+}
+
+.slide-out-right {
+}
+.slide-out-right-add {
+  -webkit-animation-duration: 250ms;
+  -webkit-animation-fill-mode: both;
+  -webkit-animation-timing-function: ease-in-out;
+}
+.slide-out-right-add-active {
+  -webkit-animation-name: slideOutRight;
 }
 
 $slide-in-up-function: cubic-bezier(.1, .7, .1, 1);
